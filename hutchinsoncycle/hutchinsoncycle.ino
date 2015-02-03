@@ -1,8 +1,8 @@
 #include <PID_v1.h>
 
 int cycles = 0;
-int ssrPin = 2;
-double soakTemp = 170;
+int ssrPin = 5;
+double soakTemp = 340;
 double roomTemp = 25;
 
 double Setpoint, Input, Output;
@@ -14,8 +14,8 @@ PID myPID(&Input, &Output, &Setpoint,0.2,0.8,0.05,DIRECT);
 int WindowSize = 500;
 unsigned long cycleStart;
 unsigned long cycleTime;
-unsigned long rampTime = 600000;  //20 minutes
-unsigned long soakTime = 3600000; //1 hour
+unsigned long rampTime = 300000;  //5 minutes
+unsigned long soakTime = 300000; //5 minutes
 
 unsigned long windowStartTime;
 

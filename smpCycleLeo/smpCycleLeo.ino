@@ -1,6 +1,6 @@
 #include <PID_v1.h>
-#include <FileIO.h>
-#include <Process.h>
+//#include <FileIO.h>
+//#include <Process.h>
 #include <Wire.h>
 #include <Adafruit_MLX90614.h>
 
@@ -8,16 +8,6 @@ const double e = 2.718281828;
 const double pi = 3.1415926;
 Adafruit_MLX90614 mlx = Adafruit_MLX90614();
 
-/////////////////
-// Phant Stuff //
-/////////////////
-// URL to phant server (only change if you're not using data.sparkfun
-String phantURL = "https://data.sparkfun.com/input/";
-// Public key (the one you see in the URL):
-String publicKey = "YGv5Xz8d2ZsONZa4LX2x";
-// Private key, which only someone posting to the stream knows
-String privateKey = "Rb8mwgoBlNTXzlZpGgmd";
-// How many data fields are in your stream?
 const int NUM_FIELDS = 6;
 // What are the names of your fields?
 //http://data.sparkfun.com/input/[publicKey]?private_key=[privateKey]¤t=[value]&power=[value]&resistance=[value]&setpoint=[value]&temperature=[value]&time=[value]&voltage=[value]
@@ -56,11 +46,11 @@ int debug = 1;
 int usePhant = 0;
 
 void setup() {
-  delay(30000);
+  delay(50000);
   // put your setup code here, to run once:
-  Bridge.begin();
-  if(debug) Serial.begin(115200);
-  FileSystem.begin();
+  //Bridge.begin();
+  if(debug) Serial1.begin(9600);
+  //FileSystem.begin();
   pinMode(pwrPin,OUTPUT);
   pinMode(13,OUTPUT);
   mlx.begin();
@@ -129,20 +119,10 @@ void loop() {
   // Open the file. Only one file can be open at a time. 
   // now post to phant
   // we can only post 100 points every 15 minutes, but it's plenty for our purposes. Conservatively once every 5 (1 in 50) seconds
-  // during the active phase and once every 60 (1 in 600) seconds in the cooldown.
-  if (usePhant)  {
-    if (cycleTime < (rampTime + soakTime + rampTime)) {//in the hot phase
-      if ((point % 50) == 0)  { //every 50th point
-        PostData();
-      }
-    }
-    else { // in the cool phase
-      if ((point % 600) == 0)  { //every 600th point
-        PostData();
-      }
-    }
-  }
-  SaveData();
+  // during the active phase and once every 60 (1 in 600) seconds in the cooldown.   }
+  String dataString = fieldData[0] + "," + fieldData[1] + "," + fieldData[2] + "," + fieldData[3] + "," + fieldData[4] + ","+ fieldData[5];
+  //String dataString = "Test";
+  Serial1.println(dataString);
   
 //  if(debug)  {
 //  Serial.print("Temperature:  ");
@@ -171,64 +151,4 @@ void loop() {
 //  double rtdOhms = 4700.0*(4.6/rtdVoltage-1);
 //  double celcius = 3383.66 - (2.17965E-9)*sqrt(2.77436E24-(3.64461E20)*rtdOhms);
 //  return celcius;
-//}
-  
 
-void PostData()
-{
-  Process phant; // Used to send command to Shell, and view response
-  String curlCmd; // Where we'll put our curl command
-  String curlData[NUM_FIELDS]; // temp variables to store curl data
-
-  // Construct curl data fields
-  // Should look like: --data "fieldName=fieldData"
-  for (int i=0; i<NUM_FIELDS; i++)
-  {
-    curlData[i] = "--data \"" + fieldName[i] + "=" + fieldData[i] + "\" ";
-  }
-
-  // Construct the curl command:
-  curlCmd = "curl ";
-  curlCmd += "-k --header "; // Put our private key in the header.
-  curlCmd += "\"Phant-Private-Key: "; // Tells our server the key is coming
-  curlCmd += privateKey; 
-  curlCmd += "\" "; // Enclose the entire header with quotes.
-  for (int i=0; i<NUM_FIELDS; i++)
-    curlCmd += curlData[i]; // Add our data fields to the command
-  curlCmd += phantURL + publicKey; // Add the server URL, including public key
-
-  // Send the curl command:
-  if (debug) Serial.print("Sending command: ");
-  if (debug) Serial.println(curlCmd); // Print command for debug
-    // Read out the response:
-  if (debug) Serial.print("Response: ");
-  // Use the phant process to read in any response from Linux:
-  phant.runShellCommand(curlCmd); // Send command through Shell
-  while (phant.available()>0)
-  {
-    char c = phant.read();
-    if (debug) Serial.print(c);
-  }
-  Serial.println();
-  Serial.flush();
-}
-
-void SaveData ()  {
-  // works when dataFile is not called.
-  File dataFile = FileSystem.open("/mnt/sda1/datalogjan29-1420.csv", FILE_APPEND);
-  //This is screwing with the phant command somehow
-  String dataString = fieldData[0] + "," + fieldData[1] + "," + fieldData[2] + "," + fieldData[3] + "," + fieldData[4] + ","+ fieldData[5];
-  //String dataString = "Test";
-  dataFile.println(dataString);
-  Serial.println(dataString);
-//  if (dataFile) {
-//    dataFile.println(dataString);
-//    dataFile.close();
-//    // print to the serial port too:
-//    if(debug) Serial.println(dataString);
-//  }
-//  else {
-//    if(debug) Serial.println("error opening datalog.txt");
-//  }
-  dataFile.close();
-}
